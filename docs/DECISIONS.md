@@ -38,3 +38,14 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Tune window size (20/30/50) and RUL cap (100/125/150) as MLflow experiments in Phase 5.
 - Exponential smoothing / rolling stats as extra features for XGBoost (Phase 3).
 - Environment gotcha: use `.venv` explicitly; the shell default `python` is a different conda env.
+
+## D-005 — Baseline & tracking design (Phase 3)
+- Baseline features: last / mean / std / slope per sensor over the 30-cycle window. Simple, interpretable, no sequence model needed.
+- Primary comparison metric: **test RMSE** (official last-window protocol), NASA score as secondary. Val metrics only for early stopping.
+- MLflow backend: local SQLite (`mlflow.db`) rather than the deprecated-style `./mlruns` file store; a server URI can be swapped in via env var in Phase 8 (docker-compose).
+- Baseline FD001 reference: **RMSE 13.58 / NASA 267.6**.
+
+## Ideas parking lot (additions)
+- Investigate the FD002 val→test gap (short test histories, regime clustering quality).
+- Multiple seeds + confidence intervals before claiming deep model > XGBoost.
+- Hyperparameter search (Optuna) as a Phase 5 option, logged as nested MLflow runs.
