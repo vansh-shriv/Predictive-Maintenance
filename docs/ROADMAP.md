@@ -6,8 +6,8 @@ Workflow: one phase at a time. Each phase ends with a docs entry in `docs/phases
 
 | Phase | Name | Output |
 |-------|------|--------|
-| 0 | Project scaffolding & docs | Folder structure, README, .gitignore, requirements, docs skeleton |
-| 1 | Data acquisition & EDA | C-MAPSS download script, EDA notebook, data notes |
+| 0 ✅ | Project scaffolding & docs | Folder structure, README, .gitignore, requirements, docs skeleton |
+| 1 ✅ | Data acquisition & EDA | C-MAPSS download script, loader, EDA notebook, data notes |
 | 2 | Preprocessing & feature engineering | RUL labels (piecewise-linear cap), scaling, sliding windows, train/val split by engine |
 | 3 | XGBoost baseline | Baseline model, RMSE + NASA scoring function, first MLflow runs |
 | 4 | Deep model (LSTM and/or 1D-CNN) | PyTorch models, training loop, comparison vs baseline in MLflow |
