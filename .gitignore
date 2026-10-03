@@ -18,3 +18,5 @@ artifacts/
 reports/*.html
 *.pt
 *.pth
+build/
+dist/

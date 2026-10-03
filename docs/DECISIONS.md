@@ -27,3 +27,14 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 ## Ideas parking lot (additions)
 - FD002/FD004 need per-operating-regime normalisation (cluster settings 1–3 into 6 regimes, e.g. KMeans).
 - Consider a notebook-free `scripts/` EDA report later if the notebook proves awkward to review in git (outputs are not committed).
+
+## D-004 — Preprocessing design (Phase 2)
+- RUL cap 125, window 30, 80/20 engine-wise validation split (seed 42); all configurable in `build_dataset.py`.
+- Scaling statistics come from training engines only; the same `Preprocessor` object is persisted and will be reused by the API.
+- Metrics (Phase 3+) are computed on the **uncapped** test RUL at each test engine's last window.
+- Windows are materialised in memory (FD001 ≈ 16.8k×30×15 float32 ≈ 30 MB) — fine for FD001–FD004; revisit with a lazy Dataset if memory grows.
+
+## Ideas parking lot (additions)
+- Tune window size (20/30/50) and RUL cap (100/125/150) as MLflow experiments in Phase 5.
+- Exponential smoothing / rolling stats as extra features for XGBoost (Phase 3).
+- Environment gotcha: use `.venv` explicitly; the shell default `python` is a different conda env.
