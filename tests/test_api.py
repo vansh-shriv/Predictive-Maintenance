@@ -26,7 +26,10 @@ def _stub_predictor():
 
 def _payload(n):
     rng = np.random.default_rng(1)
-    rows = [dict(zip(RAW_COLS, rng.normal(size=len(RAW_COLS)).tolist())) for _ in range(n)]
+    rows = [
+        dict(zip(RAW_COLS, rng.normal(size=len(RAW_COLS)).tolist(), strict=True))
+        for _ in range(n)
+    ]
     return {"engine_id": "e1", "readings": rows}
 
 
@@ -73,6 +76,12 @@ def test_prediction_log(client, monkeypatch, tmp_path):
     monkeypatch.setenv("PMAINT_PRED_LOG", str(log))
     client.post("/predict", json=_payload(2))
     assert len(log.read_text().strip().splitlines()) == 1
+
+
+def test_unwritable_prediction_log_does_not_break_predict(client, monkeypatch, tmp_path):
+    monkeypatch.setenv("PMAINT_PRED_LOG", str(tmp_path / "no_such_dir" / "preds.jsonl"))
+    r = client.post("/predict", json=_payload(2))
+    assert r.status_code == 200 and r.json()["predicted_rul"] == 42.0
 
 
 def test_setting_cols_in_schema():

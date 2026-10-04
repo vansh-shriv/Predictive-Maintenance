@@ -17,9 +17,10 @@ Use the project venv (`.venv\Scripts\python.exe`); the shell's default `python` 
 ```powershell
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt; pip install -e .     # must be editable; a stale build/ dir breaks it
-pytest                                  # all tests
+pytest                                  # all tests (needs data + local champion for 3 of them)
+pytest -m "not data and not registry"   # what CI runs; works on a bare checkout
 pytest tests/test_api.py::test_predict_ok_and_padding_flag   # single test
-ruff check .
+ruff check .                            # explicit rule set in pyproject.toml; must stay clean
 
 python -m pmaint.data.download                        # C-MAPSS -> data/raw
 python -m pmaint.data.build_dataset --subset FD001 [--window 50 --cap 125]   # -> data/processed/
@@ -53,3 +54,4 @@ Things that span several files:
 - Serving currently supports only tabular (xgboost) champions.
 - **Drift monitoring** (`monitoring/`): `traffic.py` generates API-format log records via the real `Predictor` (reference = FD001 engines `unit % 5 < 3`, live = the rest; test engines are NOT used because they are truncated early in life). `drift.py` runs Evidently with a normalised-Wasserstein test (thresholds in module constants; the default K-S test gave false alarms on correlated rows) and maps results to ok/warning/critical.
 - **Containers** (`docker/`, `docker-compose.yml`): one multi-stage Dockerfile (`serving`, `monitor` targets) + `Dockerfile.mlflow`. Serving deps are exact pins (`docker/requirements-serving.txt`, `xgboost-cpu`, `mlflow-skinny`) because the model/preprocessor are pickles; keep them in sync with the training env. The API image has no torch/Evidently. The API retries model loading every 15 s, so start order vs. `promote` does not matter. `PMAINT_HOME` sets the data root inside containers; the monitor needs `data/raw` mounted.
+- **Tests & CI**: markers `data` / `registry` flag tests that need `data/raw` or the local `mlflow.db`. `tests/test_training_smoke.py` trains on synthetic data into a temp MLflow store (monkeypatching `ensure_dataset`). `.github/workflows/ci.yml` runs ruff + the CI-mode pytest selection, then builds the compose stack and checks the API reports 503 degraded with an empty registry. `requirements.txt` is pinned to the tested versions - update it together with `docker/requirements-serving.txt`. The workflow had not been run on GitHub when written.

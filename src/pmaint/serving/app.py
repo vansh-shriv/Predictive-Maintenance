@@ -34,7 +34,8 @@ def _try_load(app: FastAPI) -> None:
 
 def _retry_if_needed() -> None:
     """If no model is loaded (e.g. registry was still empty at startup), retry periodically."""
-    if app.state.predictor is None and time.monotonic() - app.state.last_attempt >= RELOAD_INTERVAL_S:
+    waited = time.monotonic() - app.state.last_attempt
+    if app.state.predictor is None and waited >= RELOAD_INTERVAL_S:
         _try_load(app)
 
 
@@ -83,8 +84,11 @@ def predict(req: PredictRequest):
         rec = {"ts": time.time(), "engine_id": req.engine_id, "cycles": len(df),
                "predicted_rul": rul, "model_version": p.meta["version"],
                "last_reading": df.iloc[-1].to_dict()}
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(rec) + "\n")
+        try:  # monitoring is best-effort: a broken log must never fail a prediction
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec) + "\n")
+        except OSError as e:
+            log.warning("Could not write prediction log %s: %s", log_path, e)
 
     return PredictResponse(
         engine_id=req.engine_id, predicted_rul=rul, cycles_received=len(df), window=p.window,

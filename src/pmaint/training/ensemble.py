@@ -1,4 +1,6 @@
-"""Average XGBoost and LSTM predictions: python -m pmaint.training.ensemble --xgb-window 50 --lstm-window 30
+"""Average XGBoost and LSTM predictions.
+
+python -m pmaint.training.ensemble --xgb-window 50 --lstm-window 30
 
 Both component models are (re)trained for the given seed, then predictions are averaged. Val and
 test rows align across window sizes (one window per cycle / one per test engine), so mixing
@@ -20,16 +22,16 @@ def main(subset, seeds, xgb_window, lstm_window, lstm_kw, w_xgb):
     all_metrics = []
     for seed in seeds:
         x = train_xgb.run(subset, seed, xgb_window, 125, stage="ensemble-component")
-        l = train_deep.run("lstm", subset, seed, lstm_window, 125, model_kw=lstm_kw,
-                           stage="ensemble-component")
+        lr = train_deep.run("lstm", subset, seed, lstm_window, 125, model_kw=lstm_kw,
+                            stage="ensemble-component")
         d = np.load(ensure_dataset(subset, 30, 125) / "dataset.npz")  # same engines/targets
-        pv = w_xgb * x["pred_val"] + (1 - w_xgb) * l["pred_val"]
-        pt = w_xgb * x["pred_test"] + (1 - w_xgb) * l["pred_test"]
+        pv = w_xgb * x["pred_val"] + (1 - w_xgb) * lr["pred_val"]
+        pt = w_xgb * x["pred_test"] + (1 - w_xgb) * lr["pred_test"]
         with mlflow.start_run(run_name=f"ensemble-{subset}-s{seed}"):
             mlflow.set_tags({"model": "ensemble", "subset": subset, "stage": "ensemble"})
             mlflow.log_params({"subset": subset, "seed": seed, "w_xgb": w_xgb, "rul_cap": 125,
                                "xgb_window": xgb_window, "lstm_window": lstm_window,
-                               "xgb_run": x["run_id"], "lstm_run": l["run_id"]})
+                               "xgb_run": x["run_id"], "lstm_run": lr["run_id"]})
             m = {f"val_{k}": v for k, v in evaluate(d["y_val"], pv).items()}
             m.update({f"test_{k}": v for k, v in evaluate(d["y_test"], pt).items()})
             m["val_rmse_deg"] = rmse_degrading(d["y_val"], pv, 125)

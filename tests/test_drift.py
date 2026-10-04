@@ -47,5 +47,6 @@ def test_simulated_record_matches_api_log_schema():
     rng = np.random.default_rng(0)
     hist = pd.DataFrame(rng.normal(size=(40, len(RAW_COLS))), columns=RAW_COLS)
     rec = traffic._record(_stub_predictor(), "e1", hist)
-    assert set(rec) == {"ts", "engine_id", "cycles", "predicted_rul", "model_version", "last_reading"}
+    expected = {"ts", "engine_id", "cycles", "predicted_rul", "model_version", "last_reading"}
+    assert set(rec) == expected
     assert set(rec["last_reading"]) == set(RAW_COLS) and rec["cycles"] == 40

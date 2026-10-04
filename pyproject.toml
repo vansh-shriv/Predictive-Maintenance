@@ -13,6 +13,21 @@ where = ["src"]
 
 [tool.ruff]
 line-length = 100
+target-version = "py310"
+extend-exclude = ["build", ".venv"]
+
+[tool.ruff.lint]
+# Explicit selection so results do not shift when ruff changes its defaults:
+# pyflakes, pycodestyle, isort, bugbear, pyupgrade.
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*" = ["E501", "E702"]  # exploratory code: long lines and one-liners are fine
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "data: needs the C-MAPSS files in data/raw (python -m pmaint.data.download)",
+    "registry: needs a registered champion in the local mlflow.db (Phase 5)",
+]
+filterwarnings = ["ignore::DeprecationWarning"]

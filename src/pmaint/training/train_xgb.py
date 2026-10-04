@@ -44,8 +44,10 @@ def run(subset="FD001", seed=42, window=30, cap=125, stage="baseline", params=No
         mlflow.log_metrics(metrics)
         mlflow.xgboost.log_model(model, name="model", input_example=Xte[:2])
         mlflow.log_artifact(str(pdir / "preprocessor.joblib"), "preprocessing")
-        print(f"[xgb w{window} c{cap} s{seed}] " + " ".join(f"{k}={v:.2f}" for k, v in metrics.items()))
-        return {"metrics": metrics, "pred_val": pred_va, "pred_test": pred_te, "run_id": r.info.run_id}
+        shown = " ".join(f"{k}={v:.2f}" for k, v in metrics.items())
+        print(f"[xgb w{window} c{cap} s{seed}] {shown}")
+        return {"metrics": metrics, "pred_val": pred_va, "pred_test": pred_te,
+                "run_id": r.info.run_id}
 
 
 if __name__ == "__main__":

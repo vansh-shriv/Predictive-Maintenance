@@ -4,7 +4,8 @@ python -m pmaint.monitoring.drift --current logs/predictions.jsonl [--html repor
 
 Compares the model's live inputs (last raw reading per request, scaled with the *training*
 preprocessor so operating regimes are normalised) and its predictions against a reference set
-built from held-out validation engines. Exit code: 0 ok, 1 warning, 2 critical -- usable from cron/CI.
+built from held-out validation engines. Exit code: 0 ok, 1 warning, 2 critical -- usable
+from cron/CI.
 There are no ground-truth labels in production, so drift is a *proxy* for model degradation.
 """
 import argparse
@@ -15,8 +16,8 @@ import pandas as pd
 from evidently import DataDefinition, Dataset, Report
 from evidently.presets import DataDriftPreset
 
-from pmaint.serving.predictor import RAW_COLS, Predictor
 from pmaint.monitoring import traffic
+from pmaint.serving.predictor import RAW_COLS, Predictor
 from pmaint.training.tracking import setup_mlflow
 
 # Alert policy (see docs/phases/PHASE_07_drift_monitoring.md for the rationale).

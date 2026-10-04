@@ -1,16 +1,20 @@
-numpy
-pandas
-scikit-learn
-xgboost
-torch
-mlflow
-fastapi
-uvicorn[standard]
-pydantic
-evidently
-matplotlib
-seaborn
-jupyter
-pytest
-httpx
-ruff
+# Development / training environment. Pinned to the versions the project was built and validated
+# with (the registered model and preprocessor are pickles, so xgboost / scikit-learn / numpy /
+# pandas must match). torch is a floor only: CI installs the CPU build first.
+numpy==2.5.3
+pandas==3.0.6
+scikit-learn==1.9.1
+joblib==1.6.0
+xgboost==3.4.1
+torch>=2.14.1
+mlflow==3.16.1
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+evidently==0.7.23
+matplotlib==3.11.2
+seaborn==0.13.2
+jupyter==1.1.1
+pytest==9.1.1
+httpx==0.28.1
+ruff==0.16.10

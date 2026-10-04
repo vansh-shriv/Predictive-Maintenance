@@ -1,4 +1,6 @@
-"""Copy the champion from one MLflow registry to another (e.g. local sqlite -> docker-compose server).
+"""Copy the champion from one MLflow registry to another.
+
+Example: local sqlite -> docker-compose server.
 
 python -m pmaint.training.promote --src sqlite:///mlflow.db --dst http://localhost:5000
 
@@ -25,7 +27,8 @@ def promote(src: str, dst: str, name: str = MODEL_NAME, alias: str = ALIAS):
 
     with tempfile.TemporaryDirectory() as tmp:
         model_dir = src_client.download_artifacts(mv.run_id, "model", tmp)
-        pre_path = src_client.download_artifacts(mv.run_id, "preprocessing/preprocessor.joblib", tmp)
+        pre_path = src_client.download_artifacts(
+            mv.run_id, "preprocessing/preprocessor.joblib", tmp)
 
         mlflow.set_tracking_uri(dst)
         mlflow.set_registry_uri(dst)
@@ -44,7 +47,8 @@ def promote(src: str, dst: str, name: str = MODEL_NAME, alias: str = ALIAS):
     dst_client.set_registered_model_alias(name, alias, new_mv.version)
     for k, v in mv.tags.items():
         dst_client.set_model_version_tag(name, new_mv.version, k, v)
-    print(f"Promoted {name}@{alias}: {src} v{mv.version} -> {dst} v{new_mv.version} (run {new_run})")
+    print(f"Promoted {name}@{alias}: {src} v{mv.version} -> "
+          f"{dst} v{new_mv.version} (run {new_run})")
     return new_mv
 
 

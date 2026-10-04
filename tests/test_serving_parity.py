@@ -4,11 +4,15 @@ import pytest
 
 from pmaint.paths import PROCESSED_DIR, RAW_DIR, ROOT
 
-pytestmark = pytest.mark.skipif(
-    not ((ROOT / "mlflow.db").exists() and (RAW_DIR / "test_FD001.txt").exists()
-         and (PROCESSED_DIR / "FD001_w50_c125" / "dataset.npz").exists()),
-    reason="needs registered champion + FD001 data (run Phases 1-5)",
-)
+pytestmark = [
+    pytest.mark.data,
+    pytest.mark.registry,
+    pytest.mark.skipif(
+        not ((ROOT / "mlflow.db").exists() and (RAW_DIR / "test_FD001.txt").exists()
+             and (PROCESSED_DIR / "FD001_w50_c125" / "dataset.npz").exists()),
+        reason="needs registered champion + FD001 data (run Phases 1-5)",
+    ),
+]
 
 
 def test_api_pipeline_matches_offline_test_predictions():
@@ -26,5 +30,5 @@ def test_api_pipeline_matches_offline_test_predictions():
         g = test[test.unit == unit].sort_values("cycle")
         online, _ = p.predict(g[RAW_COLS])
         # Inputs agree to ~1e-7 (float32 rounding from batch-vs-single reductions), but a tree split
-        # sitting on a threshold can flip, giving differences of ~0.1 cycle. Real skew would be >> 1.
+        # sitting on a threshold can flip, giving differences of ~0.1 cycle. Real skew is >> 1.
         assert online == pytest.approx(float(offline[i]), abs=0.5)

@@ -3,9 +3,12 @@ import pytest
 from pmaint.data.loader import COLUMNS, add_train_rul, load_subset
 from pmaint.paths import RAW_DIR
 
-pytestmark = pytest.mark.skipif(
-    not (RAW_DIR / "train_FD001.txt").exists(), reason="run pmaint.data.download first"
-)
+pytestmark = [
+    pytest.mark.data,
+    pytest.mark.skipif(
+        not (RAW_DIR / "train_FD001.txt").exists(), reason="run pmaint.data.download first"
+    ),
+]
 
 
 def test_fd001_shapes():

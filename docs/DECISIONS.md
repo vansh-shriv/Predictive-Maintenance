@@ -115,3 +115,17 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Postgres + S3/MinIO for the MLflow backend; compose profile for it.
 - Scheduled monitor (cron container or GitHub Actions) with report history and alerts.
 - Multi-arch builds, image vulnerability scan, slimmer monitor image.
+
+## D-011 — Quality gates and CI (Phase 9)
+- Ruff rule set is explicit (E, F, W, I, B, UP) rather than ruff defaults, so a ruff upgrade cannot silently change what CI enforces. Notebooks are exempt from line-length and one-liner rules only.
+- Tests are split by environment need, not by speed: markers `data` and `registry` mark tests that need the dataset or a local champion; CI deselects them. Everything else must pass on a bare machine (verified in a clean copy of the repo).
+- Training code is protected by synthetic-data smoke tests (real MLflow logging into a temp store) instead of by training on C-MAPSS in CI.
+- requirements.txt is now pinned to the tested versions; the Docker serving requirements remain a separate exact-pin file (xgboost-cpu, mlflow-skinny). Keep both in sync when upgrading.
+- Monitoring/logging side effects must never fail a prediction (prediction log writes are best-effort).
+- CI docker job asserts the empty-registry behaviour (503 degraded) rather than a prediction, because no model exists in a fresh runner.
+- The workflow is unverified on GitHub until its first run.
+
+## Ideas parking lot (additions)
+- Scheduled/manual workflow with dataset access: retrain, compare with the champion, fail if test RMSE regresses beyond a margin (model quality gate).
+- CI job that promotes a tiny fixture model and checks a real /predict round trip.
+- pre-commit hooks (ruff), coverage threshold, mypy, pip-audit / image scanning, Dependabot.

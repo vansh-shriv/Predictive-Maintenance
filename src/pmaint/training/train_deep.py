@@ -1,4 +1,7 @@
-"""Train LSTM / 1D-CNN: python -m pmaint.training.train_deep --model lstm --seeds 3 [--window 50 ...]"""
+"""Train LSTM / 1D-CNN.
+
+python -m pmaint.training.train_deep --model lstm --seeds 3 [--window 50 ...]
+"""
 import argparse
 import copy
 import random
@@ -58,11 +61,11 @@ def run(model_name="lstm", subset="FD001", seed=0, window=30, cap=125, epochs=60
             for xb, yb in loader:
                 opt.zero_grad()
                 # loss in normalised units (RUL / cap) for stable gradients
-                l = loss_fn(model(xb) / model.scale, yb / model.scale)
-                l.backward()
+                batch_loss = loss_fn(model(xb) / model.scale, yb / model.scale)
+                batch_loss.backward()
                 nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 opt.step()
-                tot += l.item() * len(xb)
+                tot += batch_loss.item() * len(xb)
             val_rmse = evaluate(yva, predict(model, Xva))["rmse"]
             sched.step(val_rmse)
             mlflow.log_metrics({"train_loss": tot / len(Xtr), "val_rmse_epoch": val_rmse}, step=ep)
@@ -83,8 +86,10 @@ def run(model_name="lstm", subset="FD001", seed=0, window=30, cap=125, epochs=60
         mlflow.log_metrics(metrics)
         mlflow.pytorch.log_model(model.eval(), name="model", input_example=Xte[:2])
         mlflow.log_artifact(str(pdir / "preprocessor.joblib"), "preprocessing")
-        print(f"[{model_name} w{window} s{seed}] " + " ".join(f"{k}={v:.2f}" for k, v in metrics.items()))
-        return {"metrics": metrics, "pred_val": pred_va, "pred_test": pred_te, "run_id": r.info.run_id}
+        shown = " ".join(f"{k}={v:.2f}" for k, v in metrics.items())
+        print(f"[{model_name} w{window} s{seed}] {shown}")
+        return {"metrics": metrics, "pred_val": pred_va, "pred_test": pred_te,
+                "run_id": r.info.run_id}
 
 
 if __name__ == "__main__":
