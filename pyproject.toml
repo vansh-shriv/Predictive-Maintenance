@@ -26,6 +26,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]  # lets tests import shared doubles as `helpers`, with plain `pytest` too
 markers = [
     "data: needs the C-MAPSS files in data/raw (python -m pmaint.data.download)",
     "registry: needs a registered champion in the local mlflow.db (Phase 5)",

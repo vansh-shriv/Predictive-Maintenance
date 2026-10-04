@@ -21,12 +21,23 @@ Make quality checks automatic and reproducible: a clean lint baseline, a test su
 |---|---|
 | `ruff check .` | All checks passed |
 | Full suite on dev machine | 30 passed (includes data + registry tests) |
-| CI-mode suite (`-m "not data and not registry"`) in a **clean copy of the repo** (git-tracked + untracked files, no `data/`, no `mlflow.db`, `PYTHONPATH` pointed at the copy) | **27 passed**, 3 deselected |
+| CI-mode suite (`-m "not data and not registry"`) in a **clean copy of the repo** (git-tracked + untracked files, no `data/`, no `mlflow.db`), run with **bare `pytest`** exactly like CI | **27 passed**, 3 deselected |
 | `pip install --dry-run -r requirements.txt` | no changes (pins equal the current environment) |
 | Workflow YAML | parses; both jobs/steps as intended |
 
+## Post-push fix: first CI run failed on test collection
+The first GitHub run failed `lint-and-test` with `ModuleNotFoundError: No module named 'tests'` in `tests/test_drift.py` (the Docker job passed).
+- **Cause:** `test_drift.py` did `from tests.test_api import _stub_predictor`. That import only works when the project root is on `sys.path`. `python -m pytest` (which I used for every local run) adds the current directory; the bare `pytest` command in CI does not.
+- **Why I missed it:** my "clean copy" verification also used `python -m pytest`, so it shared the blind spot and the claim "CI-mode suite passes in a clean copy" was true but not equivalent to CI.
+- **Reproduced locally** with `.venv\Scripts\pytest.exe tests/test_drift.py` (same error), then fixed:
+  - shared test doubles moved to `tests/helpers.py` (`stub_predictor`, `payload`, `WINDOW`); `test_api.py` and `test_drift.py` import from it;
+  - `pythonpath = ["tests"]` added to `[tool.pytest.ini_options]` so `helpers` resolves under any invocation;
+  - tests no longer import each other.
+- **Re-verified the CI way:** clean copy, no data, no `mlflow.db`, bare `pytest -m "not data and not registry"` → 27 passed, 3 deselected; `ruff check .` clean; full local suite with bare `pytest` → 30 passed.
+- Lesson recorded in CLAUDE.md: reproduce CI with the exact CI command, not a convenient equivalent.
+
 ## Limitations — read before trusting the green tick
-- **The GitHub Actions workflow has not been executed.** I cannot run GitHub's runners here; what was verified is each ingredient locally (lint, the CI-mode test selection in a clean copy, the compose build + degraded-API smoke test from Phase 8). First-run failures are possible, most likely from: the CPU-torch install on Ubuntu, runner time/disk for the Docker builds (monitor image ≈ 1.5 GB), or a missing `docker compose` flag. Check the first run's logs.
+- **I cannot run GitHub's runners.** The first real run (reported by the user) passed the `docker` job and the dependency install, and failed only on the test-collection bug above, which is now fixed and reproduced locally. The `lint-and-test` job has not been seen green yet: confirm on the next push.
 - CI tests do **not** train on real C-MAPSS or check model quality, and do not run the serving-parity test; those need the dataset and a registry. A model-quality gate (e.g. "champion test RMSE ≤ 15 on FD001") belongs in a scheduled/manual workflow with data access — not implemented.
 - The Docker job only proves the stack boots and reports "no model" correctly; it does not promote a model and predict.
 - No coverage measurement, no type checking (mypy), no dependency/vulnerability scanning, no pre-commit hooks.

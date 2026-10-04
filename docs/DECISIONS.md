@@ -123,7 +123,7 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - requirements.txt is now pinned to the tested versions; the Docker serving requirements remain a separate exact-pin file (xgboost-cpu, mlflow-skinny). Keep both in sync when upgrading.
 - Monitoring/logging side effects must never fail a prediction (prediction log writes are best-effort).
 - CI docker job asserts the empty-registry behaviour (503 degraded) rather than a prediction, because no model exists in a fresh runner.
-- The workflow is unverified on GitHub until its first run.
+- First GitHub run: docker job green, lint-and-test failed on a test-collection import (tests imported each other via the package name `tests`, which only resolves with `python -m pytest`). Fixed with tests/helpers.py plus pytest `pythonpath`. Rule: verify CI fixes with the exact CI command (bare `pytest`).
 
 ## Ideas parking lot (additions)
 - Scheduled/manual workflow with dataset access: retrain, compare with the champion, fail if test RMSE regresses beyond a margin (model quality gate).
