@@ -11,7 +11,7 @@ Workflow: one phase at a time. Each phase ends with a docs entry in `docs/phases
 | 2 ✅ | Preprocessing & feature engineering | RUL labels (piecewise-linear cap), scaling, sliding windows, train/val split by engine |
 | 3 ✅ | XGBoost baseline | Baseline model, RMSE + NASA scoring function, first MLflow runs |
 | 4 ✅ | Deep model (LSTM and/or 1D-CNN) | PyTorch models, training loop, comparison vs baseline in MLflow |
-| 5 | Experiment tracking & model registry | MLflow params/metrics/artifacts, registered "Production" model |
+| 5 ✅ | Experiment tracking & model registry | MLflow params/metrics/artifacts, registered "Production" model |
 | 6 | Serving API | FastAPI `/predict`, `/health`, schema validation, loads model from registry |
 | 7 | Drift monitoring | Evidently reports (data + prediction drift), simulated drift scenario |
 | 8 | Containerization | Dockerfile(s), docker-compose (API + MLflow) |

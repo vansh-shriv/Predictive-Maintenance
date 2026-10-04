@@ -61,3 +61,15 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Ensembling XGBoost + LSTM (average) — often beats either alone.
 - Feed hand-crafted features (slope etc.) to the LSTM as extra channels.
 - Delete the failed MLflow run from the first (crashed) LSTM attempt for a clean UI.
+
+## D-007 — Model selection protocol & champion (Phase 5)
+- Selection uses mean validation val_rmse_deg across 3 seeds among runs with the same RUL cap; test metrics are reporting-only. The rule was fixed before the multi-seed finals were run.
+- Champion: XGBoost, window 50, cap 125 (registry rul-champion v1, alias champion). Test RMSE 13.87 +/- 0.12 (w30 would have been 13.62 +/- 0.17, within noise, not switched).
+- Registered artifact is a single model run (seed 0 of the winning config) plus its preprocessing/preprocessor.joblib artifact. Phase 6 must load both from the same run.
+- The serving window size is therefore 50, not 30: the API must front-pad short histories to 50 like training.
+- Deep models and the ensemble are documented as a negative result on FD001.
+
+## Ideas parking lot (additions)
+- Revisit the val/test mismatch: a validation protocol that mimics test (random truncation point per val engine, repeated) would give a less noisy selector.
+- Optuna search for XGBoost / LSTM; evaluate FD003 (2 fault modes) and FD002/4 (6 regimes).
+- Quantile or interval predictions for maintenance decisions (late predictions are costlier, see the NASA score).

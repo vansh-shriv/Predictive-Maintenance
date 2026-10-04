@@ -20,15 +20,19 @@ class LSTMRegressor(nn.Module):
 
 
 class CNN1DRegressor(nn.Module):
-    def __init__(self, n_features, channels=64, kernel=5, dropout=0.2, scale=DEFAULT_RUL_CAP):
+    def __init__(self, n_features, channels=64, kernel=5, dropout=0.2, scale=DEFAULT_RUL_CAP,
+                 batch_norm=True):
         super().__init__()
         self.scale = scale
         pad = kernel // 2
-        self.conv = nn.Sequential(
-            nn.Conv1d(n_features, channels, kernel, padding=pad), nn.BatchNorm1d(channels), nn.ReLU(),
-            nn.Conv1d(channels, channels, kernel, padding=pad), nn.BatchNorm1d(channels), nn.ReLU(),
-            nn.Conv1d(channels, channels, kernel, padding=pad), nn.BatchNorm1d(channels), nn.ReLU(),
-        )
+
+        def block(cin):
+            layers = [nn.Conv1d(cin, channels, kernel, padding=pad)]
+            if batch_norm:
+                layers.append(nn.BatchNorm1d(channels))
+            return layers + [nn.ReLU()]
+
+        self.conv = nn.Sequential(*block(n_features), *block(channels), *block(channels))
         self.head = nn.Sequential(nn.Dropout(dropout), nn.Linear(channels * 2, 32), nn.ReLU(),
                                   nn.Linear(32, 1))
 

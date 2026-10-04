@@ -24,3 +24,18 @@ def test_window_to_tabular():
     assert feats[0, cols.index("mean_a")] == 2
     assert feats[0, cols.index("slope_a")] == pytest.approx(1.0)
     assert feats[1].sum() == 0
+
+
+def test_rmse_degrading_ignores_plateau():
+    from pmaint.training.metrics import rmse_degrading
+
+    y = np.array([125.0, 125.0, 50.0, 10.0])
+    p = np.array([0.0, 0.0, 50.0, 10.0])  # huge error only on the capped plateau
+    assert rmse_degrading(y, p, 125) == 0.0
+
+
+def test_dataset_dir_naming():
+    from pmaint.paths import PROCESSED_DIR, dataset_dir
+
+    assert dataset_dir("FD001") == PROCESSED_DIR / "FD001"
+    assert dataset_dir("FD001", 50, 125).name == "FD001_w50_c125"
