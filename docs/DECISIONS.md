@@ -73,3 +73,17 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Revisit the val/test mismatch: a validation protocol that mimics test (random truncation point per val engine, repeated) would give a less noisy selector.
 - Optuna search for XGBoost / LSTM; evaluate FD003 (2 fault modes) and FD002/4 (6 regimes).
 - Quantile or interval predictions for maintenance decisions (late predictions are costlier, see the NASA score).
+
+## D-008 — Serving design (Phase 6)
+- API input is raw telemetry (24 columns), not engineered features: scaling, windowing and feature extraction live server-side so clients cannot diverge from training.
+- The window size is read from the registered run's params, never hard-coded; the preprocessor comes from the same run's artifacts, so model, scaler and window are always a consistent set.
+- Stateless API: caller sends history per request; short histories are front-padded and flagged with padded=true.
+- The model-load failure keeps the process alive and /health returns 503 with the reason.
+- Prediction log (JSONL, opt-in via PMAINT_PRED_LOG) stores the last reading + prediction per request as the data source for Phase 7.
+- Parity test tolerance is 0.5 cycles because tree splits amplify 1e-7 float noise.
+
+## Ideas parking lot (additions)
+- Enforce or warn on a minimum history (e.g. < 30 cycles); a 5-cycle history for a nearly failed engine returned 110 vs true 20.
+- Per-engine server-side buffers so clients can post one reading per cycle.
+- Batch endpoint, API key auth, request-size limits, Prometheus metrics.
+- Hot-reload when the champion alias changes.
