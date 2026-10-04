@@ -36,7 +36,7 @@ The retrain still has to pass the registry gate, so it cannot make the deployed 
 | `ruff check .` | clean |
 | `pytest` (bare, local) | 38 passed |
 | `pytest -m "not data and not registry"` in a clean copy (no data, no `mlflow.db`) | 35 passed, 3 deselected |
-| GitHub Actions for this phase | **not yet seen** — confirm after pushing |
+| GitHub Actions for this phase | **both jobs green** (lint-and-test, docker), confirmed after the push |
 
 ## Caveats
 - The pipeline is a sequential Python script, not a DAG/orchestrator: no caching of finished steps beyond "dataset exists", no parallel training, no resume after a crash mid-train (rerun creates new runs under a new pipeline id).
@@ -45,7 +45,6 @@ The retrain still has to pass the registry gate, so it cannot make the deployed 
 - The trigger's `retrain` outcome needs someone to assert `--new-labelled-data`; nothing in this project produces new labelled data, so the retrain path was exercised only up to the decision.
 - Gate margin (0.1 cycles) is a judgement call, not derived from a noise estimate; seed std of the validation metric is ~0.01 for XGBoost and larger for the LSTM.
 - The promoted registry copy is a new run/version (provenance in tags), so version numbers differ between registries.
-- CI status for the Phase 10 changes is unverified until the first push.
 
 ## How to run
 ```powershell
