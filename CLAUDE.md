@@ -30,6 +30,8 @@ python -m pmaint.training.registry [--dry-run]        # rank configs by mean val
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 uvicorn pmaint.serving.app:app --port 8000            # serves models:/rul-champion@champion
 python -m pmaint.serving.sample_request --unit 24 > payload.json   # then POST to /predict
+python -m pmaint.monitoring.simulate --scenario sensor_bias        # normal | sensor_bias | aged_fleet -> logs/sim_*.jsonl
+python -m pmaint.monitoring.drift --current logs/sim_sensor_bias.jsonl --html reports/drift.html   # exit 0 ok / 1 warning / 2 critical
 ```
 
 ## Architecture
@@ -42,3 +44,4 @@ Things that span several files:
 - **Model selection**: `training/registry.py` groups runs by params (seed excluded), ranks by mean `val_rmse_deg` (validation RMSE on degradation-phase windows) and registers the winner as `rul-champion@champion`. Validation metrics are only comparable at equal RUL cap.
 - **Serving** (`serving/`): `Predictor.from_registry` loads the champion, reads `window` from the registered run's params and the preprocessor from that run's artifacts. `/predict` takes raw readings (24 columns), applies the *same* Preprocessor -> last-`window` front-padded window -> tabular features -> model. `tests/test_serving_parity.py` guards against training/serving skew. Set `PMAINT_PRED_LOG=<file.jsonl>` to log each prediction (input for Phase 7 drift monitoring).
 - Serving currently supports only tabular (xgboost) champions.
+- **Drift monitoring** (`monitoring/`): `traffic.py` generates API-format log records via the real `Predictor` (reference = FD001 engines `unit % 5 < 3`, live = the rest; test engines are NOT used because they are truncated early in life). `drift.py` runs Evidently with a normalised-Wasserstein test (thresholds in module constants; the default K-S test gave false alarms on correlated rows) and maps results to ok/warning/critical.

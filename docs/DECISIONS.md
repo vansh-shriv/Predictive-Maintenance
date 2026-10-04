@@ -87,3 +87,16 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Per-engine server-side buffers so clients can post one reading per cycle.
 - Batch endpoint, API key auth, request-size limits, Prometheus metrics.
 - Hot-reload when the champion alias changes.
+
+## D-009 — Drift monitoring design (Phase 7)
+- Monitor the last raw reading per request scaled with the training Preprocessor, plus predicted_rul. Reference = 60 FD001 engines x 3 random cuts; current traffic is judged against it.
+- Drift test = normalised Wasserstein distance (effect size), thresholds 0.6 for sensors and 0.2 for predictions. The default K-S p-value test was rejected after it gave 3 false alarms in 20 normal runs: rows from the same engine are not independent and 15 parallel tests inflate false hits.
+- Alert levels: critical >= 30% of sensors drifted; warning >= 1 sensor or prediction drift; insufficient_data < 50 rows. CLI exit codes 0/1/2.
+- Simulated "normal" traffic must come from the same population as the reference (disjoint engines, uniform cuts). Using the early-truncated test engines produced a legitimate but misleading drift alarm.
+- Measured: 2/40 false warnings on fresh normal seeds (5%), 10/10 sensor-bias detections, 3/3 aged-fleet critical. Thresholds are calibrated on simulation only and must be recalibrated on real traffic.
+
+## Ideas parking lot (additions)
+- Delayed-label accuracy monitoring: when an engine fails, compare past predictions with the true RUL (rolling RMSE) and trigger retraining.
+- Drift on window-level features (slope, rolling mean) and multivariate/correlation drift.
+- Schedule the monitor (cron / GitHub Actions / compose job), keep report history, send alerts.
+- Retraining trigger: critical drift or rolling RMSE above a limit -> rerun sweep + registry (Phase 10 pipeline idea).
