@@ -1,0 +1,14 @@
+# Runtime deps of the API image. Versions are pinned to the ones the model/preprocessor were
+# trained and pickled with (xgboost + scikit-learn pickles are version sensitive).
+# xgboost-cpu = same module without the ~350 MB of CUDA/NCCL wheels the default Linux build pulls.
+mlflow-skinny==3.16.1
+xgboost-cpu==3.4.1
+scikit-learn==1.9.1
+pandas==3.0.6
+numpy==2.5.3
+scipy==1.18.1
+joblib==1.6.0
+cloudpickle==3.1.2
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+pydantic==2.13.5

@@ -32,6 +32,13 @@ uvicorn pmaint.serving.app:app --port 8000            # serves models:/rul-champ
 python -m pmaint.serving.sample_request --unit 24 > payload.json   # then POST to /predict
 python -m pmaint.monitoring.simulate --scenario sensor_bias        # normal | sensor_bias | aged_fleet -> logs/sim_*.jsonl
 python -m pmaint.monitoring.drift --current logs/sim_sensor_bias.jsonl --html reports/drift.html   # exit 0 ok / 1 warning / 2 critical
+
+# Docker (Phase 8)
+docker compose up -d --build                          # mlflow:5000 + api:8000
+python -m pmaint.training.promote --src sqlite:///mlflow.db --dst http://localhost:5000   # copy champion into the container registry
+python -m pmaint.monitoring.replay --scenario sensor_bias   # send simulated traffic to the API
+docker compose --profile monitor run --rm monitor     # drift job; exit 0/1/2
+docker compose down                                   # keeps the registry volume (-v deletes it)
 ```
 
 ## Architecture
@@ -45,3 +52,4 @@ Things that span several files:
 - **Serving** (`serving/`): `Predictor.from_registry` loads the champion, reads `window` from the registered run's params and the preprocessor from that run's artifacts. `/predict` takes raw readings (24 columns), applies the *same* Preprocessor -> last-`window` front-padded window -> tabular features -> model. `tests/test_serving_parity.py` guards against training/serving skew. Set `PMAINT_PRED_LOG=<file.jsonl>` to log each prediction (input for Phase 7 drift monitoring).
 - Serving currently supports only tabular (xgboost) champions.
 - **Drift monitoring** (`monitoring/`): `traffic.py` generates API-format log records via the real `Predictor` (reference = FD001 engines `unit % 5 < 3`, live = the rest; test engines are NOT used because they are truncated early in life). `drift.py` runs Evidently with a normalised-Wasserstein test (thresholds in module constants; the default K-S test gave false alarms on correlated rows) and maps results to ok/warning/critical.
+- **Containers** (`docker/`, `docker-compose.yml`): one multi-stage Dockerfile (`serving`, `monitor` targets) + `Dockerfile.mlflow`. Serving deps are exact pins (`docker/requirements-serving.txt`, `xgboost-cpu`, `mlflow-skinny`) because the model/preprocessor are pickles; keep them in sync with the training env. The API image has no torch/Evidently. The API retries model loading every 15 s, so start order vs. `promote` does not matter. `PMAINT_HOME` sets the data root inside containers; the monitor needs `data/raw` mounted.

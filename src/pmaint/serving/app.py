@@ -18,16 +18,30 @@ from pmaint.serving.schemas import ModelInfo, PredictRequest, PredictResponse
 log = logging.getLogger("pmaint.api")
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    app.state.predictor = None
-    app.state.load_error = None
+RELOAD_INTERVAL_S = 15  # retry a failed model load at most this often
+
+
+def _try_load(app: FastAPI) -> None:
+    app.state.last_attempt = time.monotonic()
     try:
         app.state.predictor = Predictor.from_registry()
+        app.state.load_error = None
         log.info("Loaded %s", app.state.predictor.meta)
     except Exception as e:  # keep the process up so /health can report the problem
         app.state.load_error = f"{type(e).__name__}: {e}"
-        log.exception("Model load failed")
+        log.warning("Model load failed: %s", app.state.load_error)
+
+
+def _retry_if_needed() -> None:
+    """If no model is loaded (e.g. registry was still empty at startup), retry periodically."""
+    if app.state.predictor is None and time.monotonic() - app.state.last_attempt >= RELOAD_INTERVAL_S:
+        _try_load(app)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.predictor = None
+    _try_load(app)
     yield
 
 
@@ -35,6 +49,7 @@ app = FastAPI(title="Turbofan RUL API", version="0.1.0", lifespan=lifespan)
 
 
 def _predictor() -> Predictor:
+    _retry_if_needed()
     p = app.state.predictor
     if p is None:
         raise HTTPException(503, f"Model not loaded: {app.state.load_error}")
@@ -43,6 +58,7 @@ def _predictor() -> Predictor:
 
 @app.get("/health")
 def health():
+    _retry_if_needed()
     ok = app.state.predictor is not None
     body = {"status": "ok" if ok else "degraded", "model_loaded": ok}
     if not ok:

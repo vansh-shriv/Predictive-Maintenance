@@ -1,0 +1,13 @@
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 MLFLOW_DISABLE_AGENT_HINT=1
+RUN pip install mlflow==3.16.1
+RUN useradd --create-home mlflow && mkdir -p /mlflow && chown mlflow /mlflow
+USER mlflow
+WORKDIR /mlflow
+EXPOSE 5000
+# Backend store (runs, registry) = sqlite; artifacts are proxied through the server so clients
+# need no filesystem access to the artifact store.
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", \
+     "--backend-store-uri", "sqlite:////mlflow/mlflow.db", \
+     "--artifacts-destination", "/mlflow/artifacts", \
+     "--allowed-hosts", "*"]

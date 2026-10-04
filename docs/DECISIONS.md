@@ -100,3 +100,18 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Drift on window-level features (slope, rolling mean) and multivariate/correlation drift.
 - Schedule the monitor (cron / GitHub Actions / compose job), keep report history, send alerts.
 - Retraining trigger: critical drift or rolling RMSE above a limit -> rerun sweep + registry (Phase 10 pipeline idea).
+
+## D-010 — Containerization design (Phase 8)
+- Two service images from one multi-stage Dockerfile (serving, monitor) plus an MLflow server image. Training stays on the host: the API image has no torch and no Evidently.
+- Reproducibility over convenience: serving dependencies are exact pins equal to the training environment, because the registered XGBoost model and the scikit-learn Preprocessor are pickles.
+- xgboost-cpu in containers (saves ~780 MB across images); verified identical predictions.
+- The container registry is populated by promoting the validated champion from the local registry (training/promote.py) rather than retraining, so the deployed model is exactly the one that was selected and tested. Provenance is stored as tags.
+- API is allowed to start with an empty registry (503 degraded) and self-heals by retrying every 15 s; depends_on only guarantees the MLflow server is healthy, not that a model exists.
+- MLflow artifacts are proxied through the server (--artifacts-destination), so clients need no shared filesystem. SQLite on a named volume; fine for single-host dev.
+- No auth/TLS yet; ports are for local development.
+
+## Ideas parking lot (additions)
+- Alias hot-reload (poll the registry or a /admin/reload endpoint) so promoting a new champion needs no restart.
+- Postgres + S3/MinIO for the MLflow backend; compose profile for it.
+- Scheduled monitor (cron container or GitHub Actions) with report history and alerts.
+- Multi-arch builds, image vulnerability scan, slimmer monitor image.

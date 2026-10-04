@@ -1,6 +1,8 @@
+import os
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+# PMAINT_HOME lets containers (where the package is not under the repo root) set the data root.
+ROOT = Path(os.environ.get("PMAINT_HOME") or Path(__file__).resolve().parents[2])
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
 

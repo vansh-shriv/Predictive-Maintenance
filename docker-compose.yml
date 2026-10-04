@@ -1,0 +1,49 @@
+# docker compose up -d --build                 # mlflow + api
+# python -m pmaint.training.promote --src sqlite:///mlflow.db --dst http://localhost:5000
+# docker compose --profile monitor run --rm monitor
+name: pmaint
+
+services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mlflow
+    ports: ["5000:5000"]
+    volumes: ["mlflow-data:/mlflow"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: serving
+    ports: ["8000:8000"]
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes: ["./logs:/app/logs"]
+    depends_on:
+      mlflow: {condition: service_healthy}
+    restart: unless-stopped
+
+  monitor:            # one-shot job: docker compose --profile monitor run --rm monitor
+    profiles: ["monitor"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: monitor
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+      - ./data/raw:/app/data/raw:ro
+    depends_on:
+      mlflow: {condition: service_healthy}
+
+volumes:
+  mlflow-data:

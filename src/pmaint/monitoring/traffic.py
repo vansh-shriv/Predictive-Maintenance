@@ -34,9 +34,9 @@ def _cuts(rng, length, n, lo_frac=0.0):
     return rng.integers(lo, length + 1, size=n).tolist()
 
 
-def generate(predictor: Predictor, scenario: str = "normal", subset: str = "FD001",
-             cuts_per_engine: int | None = None, seed: int = 0) -> list[dict]:
-    """Return log records for one scenario."""
+def histories(scenario: str = "normal", subset: str = "FD001",
+              cuts_per_engine: int | None = None, seed: int = 0):
+    """Yield (engine_id, truncated raw history DataFrame) for one scenario."""
     if scenario not in SCENARIOS + ("reference",):
         raise ValueError(f"scenario must be one of {SCENARIOS + ('reference',)}")
     rng = np.random.default_rng(seed)
@@ -64,12 +64,17 @@ def generate(predictor: Predictor, scenario: str = "normal", subset: str = "FD00
         for s in BIAS_SENSORS:
             df[s] = df[s] + BIAS_SIGMAS * sigma[s]
 
-    records = []
     for u in units:
         g = df[df.unit == u].sort_values("cycle")
         for cut in _cuts(rng, len(g), cuts_per_engine, lo_frac):
-            records.append(_record(predictor, f"{subset}-{scenario}-u{u}", g.iloc[:cut]))
-    return records
+            yield f"{subset}-{scenario}-u{u}", g.iloc[:cut]
+
+
+def generate(predictor: Predictor, scenario: str = "normal", subset: str = "FD001",
+             cuts_per_engine: int | None = None, seed: int = 0) -> list[dict]:
+    """Return log records for one scenario (predictions made in-process)."""
+    return [_record(predictor, eid, hist)
+            for eid, hist in histories(scenario, subset, cuts_per_engine, seed)]
 
 
 def write_jsonl(records: list[dict], path: Path) -> None:

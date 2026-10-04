@@ -77,3 +77,21 @@ def test_prediction_log(client, monkeypatch, tmp_path):
 
 def test_setting_cols_in_schema():
     assert set(SETTING_COLS) <= set(RAW_COLS)
+
+
+def test_model_load_retries_until_registry_is_populated(monkeypatch):
+    """Compose starts the API before the champion is promoted; the API must recover by itself."""
+    calls = {"n": 0}
+
+    def flaky(cls):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("registry empty")
+        return _stub_predictor()
+
+    monkeypatch.setattr(Predictor, "from_registry", classmethod(flaky))
+    monkeypatch.setattr(app_module, "RELOAD_INTERVAL_S", 0)
+    with TestClient(app_module.app) as c:
+        assert c.get("/health").status_code == 200  # first request triggers the retry
+        assert c.post("/predict", json=_payload(3)).json()["predicted_rul"] == 42.0
+    assert calls["n"] == 2

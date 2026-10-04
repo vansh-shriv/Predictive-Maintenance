@@ -14,7 +14,7 @@ Workflow: one phase at a time. Each phase ends with a docs entry in `docs/phases
 | 5 ✅ | Experiment tracking & model registry | MLflow params/metrics/artifacts, registered "Production" model |
 | 6 ✅ | Serving API | FastAPI `/predict`, `/health`, schema validation, loads model from registry |
 | 7 ✅ | Drift monitoring | Evidently reports (data + prediction drift), simulated drift scenario |
-| 8 | Containerization | Dockerfile(s), docker-compose (API + MLflow) |
+| 8 ✅ | Containerization | Dockerfile(s), docker-compose (API + MLflow) |
 | 9 | Testing & CI | pytest, ruff, GitHub Actions |
 | 10 | Pipeline automation & final docs | Reproducible pipeline (e.g. DVC/Makefile), retraining trigger idea, final README |
 
