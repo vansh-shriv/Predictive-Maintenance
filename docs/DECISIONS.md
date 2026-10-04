@@ -49,3 +49,15 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Investigate the FD002 val→test gap (short test histories, regime clustering quality).
 - Multiple seeds + confidence intervals before claiming deep model > XGBoost.
 - Hyperparameter search (Optuna) as a Phase 5 option, logged as nested MLflow runs.
+
+## D-006 — Deep model design & honest comparison (Phase 4)
+- Networks emit cycles (`raw * cap`); loss is computed on RUL/cap for stable gradients.
+- Early stopping on validation RMSE with best-weight restore; 3 seeds per model to separate signal from noise.
+- Result: XGBoost (13.58) < LSTM (15.54 ± 0.10) < CNN (19.46 ± 0.40) in test RMSE on FD001. We report this as-is; the deep models were untuned.
+- The registry candidate must be chosen by measured test/validation results, not by which model is "more modern". If tuning does not close the gap, XGBoost is the champion and the deep models are documented as a negative result.
+
+## Ideas parking lot (additions)
+- Tuning candidates: window 50, hidden 128, lr 3e-4, Huber loss, no BatchNorm (use LayerNorm/dropout) for CNN, cap 100/130.
+- Ensembling XGBoost + LSTM (average) — often beats either alone.
+- Feed hand-crafted features (slope etc.) to the LSTM as extra channels.
+- Delete the failed MLflow run from the first (crashed) LSTM attempt for a clean UI.
