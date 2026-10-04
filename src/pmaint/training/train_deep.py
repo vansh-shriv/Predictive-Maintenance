@@ -33,7 +33,8 @@ def predict(model, X, batch=2048) -> np.ndarray:
 
 
 def run(model_name="lstm", subset="FD001", seed=0, window=30, cap=125, epochs=60, lr=1e-3,
-        batch_size=256, patience=10, loss="mse", model_kw=None, stage="deep") -> dict:
+        batch_size=256, patience=10, loss="mse", model_kw=None, stage="deep",
+        tags=None) -> dict:
     set_seed(seed)
     pdir = ensure_dataset(subset, window, cap)
     d = np.load(pdir / "dataset.npz")
@@ -52,7 +53,7 @@ def run(model_name="lstm", subset="FD001", seed=0, window=30, cap=125, epochs=60
                   batch_size=batch_size, patience=patience, window=window,
                   n_features=Xtr.shape[2], rul_cap=cap, **model_kw)
     with mlflow.start_run(run_name=f"{model_name}-{subset}-w{window}-s{seed}") as r:
-        mlflow.set_tags({"model": model_name, "subset": subset, "stage": stage})
+        mlflow.set_tags({"model": model_name, "subset": subset, "stage": stage, **(tags or {})})
         mlflow.log_params(params)
         best, best_state, bad = float("inf"), None, 0
         for ep in range(epochs):

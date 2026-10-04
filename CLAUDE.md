@@ -34,6 +34,9 @@ python -m pmaint.serving.sample_request --unit 24 > payload.json   # then POST t
 python -m pmaint.monitoring.simulate --scenario sensor_bias        # normal | sensor_bias | aged_fleet -> logs/sim_*.jsonl
 python -m pmaint.monitoring.drift --current logs/sim_sensor_bias.jsonl --html reports/drift.html   # exit 0 ok / 1 warning / 2 critical
 
+python -m pmaint.pipeline [--quick]                   # data -> train -> register (-> promote with --steps/--promote-to)
+python -m pmaint.monitoring.trigger --current logs/x.jsonl   # drift verdict -> none/investigate/retrain (exit 0/1/2)
+
 # Docker (Phase 8)
 docker compose up -d --build                          # mlflow:5000 + api:8000
 python -m pmaint.training.promote --src sqlite:///mlflow.db --dst http://localhost:5000   # copy champion into the container registry
@@ -55,3 +58,4 @@ Things that span several files:
 - **Drift monitoring** (`monitoring/`): `traffic.py` generates API-format log records via the real `Predictor` (reference = FD001 engines `unit % 5 < 3`, live = the rest; test engines are NOT used because they are truncated early in life). `drift.py` runs Evidently with a normalised-Wasserstein test (thresholds in module constants; the default K-S test gave false alarms on correlated rows) and maps results to ok/warning/critical.
 - **Containers** (`docker/`, `docker-compose.yml`): one multi-stage Dockerfile (`serving`, `monitor` targets) + `Dockerfile.mlflow`. Serving deps are exact pins (`docker/requirements-serving.txt`, `xgboost-cpu`, `mlflow-skinny`) because the model/preprocessor are pickles; keep them in sync with the training env. The API image has no torch/Evidently. The API retries model loading every 15 s, so start order vs. `promote` does not matter. `PMAINT_HOME` sets the data root inside containers; the monitor needs `data/raw` mounted.
 - **Tests & CI**: markers `data` / `registry` flag tests that need `data/raw` or the local `mlflow.db`. `tests/test_training_smoke.py` trains on synthetic data into a temp MLflow store (monkeypatching `ensure_dataset`). `.github/workflows/ci.yml` runs ruff + the CI-mode pytest selection, then builds the compose stack and checks the API reports 503 degraded with an empty registry. `requirements.txt` is pinned to the tested versions - update it together with `docker/requirements-serving.txt`. Shared test doubles live in `tests/helpers.py` (tests/ is on pytest's `pythonpath`); tests must not import each other via `tests.` because plain `pytest` does not put the repo root on `sys.path`.
+- **Pipeline & gate** (`pipeline.py`, `training/registry.py`): the pipeline tags its runs with `pipeline_id` and registers only from that pool. `register_best` will NOT replace an existing champion unless the candidate's mean `val_rmse_deg` is better by `MIN_GAIN` (0.1) - reruns are idempotent; use `--force` to override. `monitoring/trigger.py` maps drift levels to actions (localised drift is never auto-retrained).

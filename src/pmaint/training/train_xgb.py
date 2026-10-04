@@ -17,7 +17,8 @@ PARAMS = dict(
 )
 
 
-def run(subset="FD001", seed=42, window=30, cap=125, stage="baseline", params=None) -> dict:
+def run(subset="FD001", seed=42, window=30, cap=125, stage="baseline", params=None,
+        tags=None) -> dict:
     """Train one XGBoost model inside an MLflow run. Returns metrics, preds and run_id."""
     params = {**PARAMS, **(params or {})}
     pdir = ensure_dataset(subset, window, cap)
@@ -28,7 +29,7 @@ def run(subset="FD001", seed=42, window=30, cap=125, stage="baseline", params=No
     Xte, _ = window_to_tabular(d["X_test"], names)
 
     with mlflow.start_run(run_name=f"xgb-{subset}-w{window}-c{cap}-s{seed}") as r:
-        mlflow.set_tags({"model": "xgboost", "subset": subset, "stage": stage})
+        mlflow.set_tags({"model": "xgboost", "subset": subset, "stage": stage, **(tags or {})})
         mlflow.log_params({**params, "subset": subset, "seed": seed, "n_features": len(cols),
                            "window": window, "rul_cap": cap})
         model = XGBRegressor(**params, random_state=seed, n_jobs=-1)

@@ -129,3 +129,11 @@ Every notable choice, idea, and trade-off, newest at the bottom.
 - Scheduled/manual workflow with dataset access: retrain, compare with the champion, fail if test RMSE regresses beyond a margin (model quality gate).
 - CI job that promotes a tiny fixture model and checks a real /predict round trip.
 - pre-commit hooks (ruff), coverage threshold, mypy, pip-audit / image scanning, Dependabot.
+
+## D-012 — Pipeline, gate and retrain policy (Phase 10)
+- One entry point (python -m pmaint.pipeline) with fixed step order data -> train -> register -> promote. It reproduces the Phase 5 selection pool exactly (verified: identical metrics, same ranking).
+- Runs carry a pipeline_id tag; the register step inside a pipeline only considers that pipeline's runs, so repeated runs do not accumulate into one candidate pool.
+- Champion safety gate: replace only if the candidate beats the current champion by >= 0.1 cycles of mean validation val_rmse_deg. Makes reruns idempotent and prevents silent downgrades. --force exists for deliberate overrides. The 0.1 margin is a judgement call.
+- Retrain policy: localised drift never auto-retrains (likely sensor fault); broad drift retrains only when new labelled data exists; the retrain must still pass the gate.
+- The trigger is a policy plus a CLI, not a scheduler; scheduling, new-label ingestion and delayed-label accuracy monitoring remain future work.
+- Documentation closed with README (architecture, results, limitations) and RETROSPECTIVE (mistakes and how they were caught).
